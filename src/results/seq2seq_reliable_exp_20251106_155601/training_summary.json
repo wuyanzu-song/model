@@ -1,0 +1,23 @@
+{
+  "final_train_loss": 2.090268095334371,
+  "final_val_loss": 1.6867820620536804,
+  "best_val_loss": 1.6867820620536804,
+  "test_accuracy": 0.6,
+  "model_parameters": 242744,
+  "training_epochs": 10,
+  "config": {
+    "d_model": 64,
+    "num_heads": 4,
+    "num_encoder_layers": 2,
+    "num_decoder_layers": 2,
+    "d_ff": 256,
+    "max_seq_len": 30,
+    "dropout": 0.1,
+    "batch_size": 16,
+    "learning_rate": 0.001,
+    "weight_decay": 0.01,
+    "num_epochs": 10,
+    "dataset": "reliable",
+    "num_samples": 800
+  }
+}

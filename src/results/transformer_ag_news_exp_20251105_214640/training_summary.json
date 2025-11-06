@@ -1,0 +1,21 @@
+{
+  "final_train_loss": 2.047126001641984,
+  "final_val_loss": 1.7897587589728527,
+  "best_val_loss": 1.7897587589728527,
+  "final_learning_rate": 0.001,
+  "total_epochs": 5,
+  "config": {
+    "d_model": 64,
+    "num_heads": 2,
+    "num_layers": 1,
+    "d_ff": 256,
+    "max_seq_len": 128,
+    "dropout": 0.1,
+    "batch_size": 32,
+    "seq_len": 128,
+    "learning_rate": 0.001,
+    "weight_decay": 0.01,
+    "num_epochs": 5,
+    "dataset": "ag_news"
+  }
+}

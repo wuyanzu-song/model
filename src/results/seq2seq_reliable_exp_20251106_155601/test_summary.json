@@ -1,0 +1,7 @@
+{
+  "test_accuracy": 0.6,
+  "total_test_samples": 5,
+  "correct_predictions": 3,
+  "test_details_path": "results\\seq2seq_reliable_exp_20251106_155601\\test_results.csv",
+  "average_similarity": 0.5333333333333333
+}

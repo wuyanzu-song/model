@@ -1,0 +1,6 @@
+sample_id,input,expected,predicted,correct,similarity
+1,ifmmp,allo,oloo,True,0.6666666666666666
+2,HELLO,ALLO,AE  ,False,0.3333333333333333
+3,Hfmmp,allo,ollo,True,0.6666666666666666
+4,ifmmp Äpsme,allo welt,o   wslt,True,0.6666666666666666
+5,HELLO WORLD,ALLO WELT,CE  EOE  ,False,0.3333333333333333

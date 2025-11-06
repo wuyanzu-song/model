@@ -1,0 +1,10 @@
+torch>=2.0.0
+numpy
+matplotlib
+tqdm
+tensorboard
+transformers>=4.20.0
+datasets
+sentencepiece
+wandb
+pyyaml

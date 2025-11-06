@@ -1,0 +1,6 @@
+sample_id,input,expected,predicted,correct,similarity
+1,b dspxe xbudijoh bjs cbmmppot ,ine menschenmenge betrachtet ,iwbfrnn hea  t    innnnftnn ,True,0.6666666666666666
+2,b xpnbo jt sfbejoh b nbhbßjof ,"ine frau, die einer andere fr",ie frau idie  inem uifmr n i,True,0.8888888888888888
+3,uxp nfo trvbu up mjhiu dboemft,wei männer gehen in die hocke,wi mrnner minnn eieein  ineee,False,0.46153846153846156
+4,b zpvoh nbo jt xbmljoh uispvhi,in junger mann geht durch ein,i junge  minn  ilnnairdntaine,True,0.8461538461538461
+5,uif mjuumf cpz sjeft ijt cjdzd,er kleine junge fährt fahrrad,inkleinee unge  uernuniefnnnd,True,0.6666666666666666
