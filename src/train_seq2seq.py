@@ -1,277 +1,3 @@
-#
-# import torch
-# import torch.nn as nn
-# import torch.optim as optim
-# import argparse
-# import os
-# import sys
-# import json
-# import pandas as pd
-# from datetime import datetime
-#
-# # 获取当前脚本的绝对路径
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# # 获取项目根目录（src的父目录）
-# project_root = os.path.dirname(current_dir)
-# # 添加项目根目录到Python路径
-# sys.path.append(project_root)
-# sys.path.append(current_dir)
-#
-# from models.transformer import EncoderDecoderTransformer
-# from data.seq2seq_dataloader import load_reverse_string_dataset
-# from utils.seq2seq_trainer import Seq2SeqTrainer
-#
-# # Seq2Seq配置
-# SEQ2SEQ_CONFIG = {
-#     # Model configuration
-#     'd_model': 16,  # 进一步减小到16
-#     'num_heads': 2,
-#     'num_encoder_layers': 1,
-#     'num_decoder_layers': 1,
-#     'd_ff': 64,  # 进一步减小到64
-#     'max_seq_len': 25,
-#     'dropout': 0.1,
-#
-#     # Training configuration
-#     'batch_size': 8,  # 进一步减小到8
-#     'learning_rate': 0.001,
-#     'weight_decay': 0.01,
-#     'num_epochs': 3,  # 进一步减少到3
-#
-#     # Data configuration
-#     'num_samples': 500,  # 进一步减少到500
-#     # 移除 save_dir，使用统一的results目录
-# }
-#
-#
-# def setup_results_dir(config):
-#     """创建结果目录结构"""
-#     # 基础结果目录
-#     results_dir = "results"
-#     os.makedirs(results_dir, exist_ok=True)
-#
-#     # 按时间创建子目录，避免覆盖
-#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-#     exp_dir = os.path.join(results_dir, f"seq2seq_exp_{timestamp}")
-#     os.makedirs(exp_dir, exist_ok=True)
-#
-#     # 创建子目录
-#     os.makedirs(os.path.join(exp_dir, "checkpoints"), exist_ok=True)
-#
-#     return exp_dir
-#
-#
-# def decode_sequence(seq, dataset):
-#     """解码序列为可读字符串"""
-#     return ' '.join(str(x) for x in seq.tolist() if x not in [0, 1, 2])  # 忽略特殊token
-#
-#
-# def test_seq2seq_model(model, dataset, device, results_dir, num_tests=10):
-#     """测试seq2seq模型并保存结果"""
-#     model.eval()
-#
-#     test_results = []
-#
-#     print("\n" + "=" * 50)
-#     print("Seq2Seq模型测试结果:")
-#     print("=" * 50)
-#
-#     with torch.no_grad():
-#         for i in range(min(num_tests, len(dataset))):  # 确保不超出数据集范围
-#             # 直接从数据集中获取样本
-#             sample = dataset[i]
-#
-#             # 提取源序列和目标序列
-#             src_seq = sample['src'].tolist() if hasattr(sample['src'], 'tolist') else sample['src']
-#             tgt_seq = sample['tgt_output'][1:-1].tolist() if hasattr(sample['tgt_output'], 'tolist') else sample[
-#                                                                                                               'tgt_output'][
-#                                                                                                           1:-1]  # 去掉SOS和EOS
-#
-#             # 转换为tensor
-#             src = torch.tensor(src_seq, device=device).unsqueeze(0)
-#             tgt_input = torch.tensor([dataset.sos_token] + tgt_seq, device=device).unsqueeze(0)
-#
-#             # 创建掩码
-#             src_mask = (src != dataset.pad_token).unsqueeze(1).unsqueeze(2)
-#             tgt_len = tgt_input.size(1)
-#             tgt_mask = torch.tril(torch.ones(tgt_len, tgt_len, device=device)).unsqueeze(0).unsqueeze(0)
-#
-#             # 模型预测
-#             output = model(
-#                 src,
-#                 tgt_input[:, :-1],  # 去掉最后一个token
-#                 src_mask,
-#                 tgt_mask[:, :, :-1, :-1]  # 调整掩码大小
-#             )
-#
-#             # 获取预测结果
-#             predicted = output.argmax(dim=-1).squeeze(0)
-#
-#             input_str = decode_sequence(src.squeeze(0), dataset)
-#             expected_str = decode_sequence(torch.tensor(tgt_seq), dataset)
-#             predicted_str = decode_sequence(predicted, dataset)
-#
-#             is_correct = (expected_str == predicted_str)
-#
-#             test_results.append({
-#                 'sample_id': i + 1,
-#                 'input': input_str,
-#                 'expected': expected_str,
-#                 'predicted': predicted_str,
-#                 'correct': is_correct
-#             })
-#
-#             print(f"样本 {i + 1}:")
-#             print(f"  输入: {input_str}")
-#             print(f"  期望输出: {expected_str}")
-#             print(f"  模型预测: {predicted_str}")
-#             print(f"  是否正确: {'✓' if is_correct else '✗'}")
-#             print()
-#
-#     # 保存测试结果到CSV
-#     test_df = pd.DataFrame(test_results)
-#     test_csv_path = os.path.join(results_dir, "test_results.csv")
-#     test_df.to_csv(test_csv_path, index=False)
-#
-#     # 保存测试结果摘要
-#     accuracy = sum(test_df['correct']) / len(test_df)
-#     summary = {
-#         'test_accuracy': accuracy,
-#         'total_test_samples': len(test_df),
-#         'correct_predictions': sum(test_df['correct']),
-#         'test_details_path': test_csv_path
-#     }
-#
-#     summary_path = os.path.join(results_dir, "test_summary.json")
-#     with open(summary_path, 'w', encoding='utf-8') as f:
-#         json.dump(summary, f, indent=2, ensure_ascii=False)
-#
-#     print(f"测试结果已保存至: {test_csv_path}")
-#     print(f"测试准确率: {accuracy:.2%}")
-#
-#     return test_df, accuracy
-#
-#
-# def main(config):
-#     # 设置结果目录
-#     results_dir = setup_results_dir(config)
-#     checkpoints_dir = os.path.join(results_dir, "checkpoints")
-#     print(f"结果将保存至: {results_dir}")
-#
-#     # Set device
-#     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-#     print(f"Using device: {device}")
-#
-#     # Load data
-#     print("Loading Reverse String Dataset...")
-#     train_loader, val_loader, dataset = load_reverse_string_dataset(
-#         batch_size=config['batch_size'],
-#         num_samples=config['num_samples']
-#     )
-#
-#     # 修复：直接使用数据集的vocab_size
-#     vocab_size = dataset.vocab_size  # 直接访问，没有.dataset
-#
-#     # Create model
-#     print("Creating Encoder-Decoder Transformer...")
-#     model = EncoderDecoderTransformer(
-#         src_vocab_size=vocab_size,
-#         tgt_vocab_size=vocab_size,
-#         d_model=config['d_model'],
-#         num_heads=config['num_heads'],
-#         num_encoder_layers=config['num_encoder_layers'],
-#         num_decoder_layers=config['num_decoder_layers'],
-#         d_ff=config['d_ff'],
-#         max_seq_len=config['max_seq_len'],
-#         dropout=config['dropout']
-#     ).to(device)
-#
-#     print(f"Model parameters: {sum(p.numel() for p in model.parameters()):,}")
-#     print(f"Encoder layers: {config['num_encoder_layers']}")
-#     print(f"Decoder layers: {config['num_decoder_layers']}")
-#     print(f"Vocabulary size: {vocab_size}")
-#
-#     # Loss and optimizer (忽略padding token)
-#     criterion = nn.CrossEntropyLoss(ignore_index=0)
-#     optimizer = optim.AdamW(
-#         model.parameters(),
-#         lr=config['learning_rate'],
-#         weight_decay=config.get('weight_decay', 0.01)
-#     )
-#
-#     # Create trainer (传入results_dir)
-#     trainer = Seq2SeqTrainer(
-#         model=model,
-#         train_loader=train_loader,
-#         val_loader=val_loader,
-#         optimizer=optimizer,
-#         criterion=criterion,
-#         device=device,
-#         config=config,
-#         results_dir=results_dir  # 新增参数
-#     )
-#
-#     # 保存实验配置
-#     trainer.save_experiment_config()
-#
-#     # Train model
-#     print("Starting Seq2Seq training...")
-#     trainer.train(
-#         num_epochs=config['num_epochs'],
-#         save_dir=checkpoints_dir  # 使用results目录下的checkpoints
-#     )
-#
-#     # 保存所有结果
-#     trainer.plot_losses()  # 会自动保存到results_dir
-#     trainer.save_training_results()
-#     trainer.save_final_model(model)
-#
-#     # 测试模型并保存结果
-#     test_df, accuracy = test_seq2seq_model(model, dataset, device, results_dir)
-#
-#     # 训练统计
-#     print("\n" + "=" * 50)
-#     print("Seq2Seq训练统计:")
-#     print("=" * 50)
-#     print(f"最终训练损失: {trainer.train_losses[-1]:.4f}")
-#     print(f"最终验证损失: {trainer.val_losses[-1]:.4f}")
-#     print(f"最佳验证损失: {trainer.best_val_loss:.4f}")
-#     print(f"测试准确率: {accuracy:.2%}")
-#     print(f"模型参数量: {sum(p.numel() for p in model.parameters()):,}")
-#     print(f"\n所有结果已保存至: {results_dir}")
-#
-#     # 保存训练统计摘要
-#     training_summary = {
-#         'final_train_loss': float(trainer.train_losses[-1]),
-#         'final_val_loss': float(trainer.val_losses[-1]),
-#         'best_val_loss': float(trainer.best_val_loss),
-#         'test_accuracy': float(accuracy),
-#         'model_parameters': int(sum(p.numel() for p in model.parameters())),
-#         'training_epochs': len(trainer.train_losses),
-#         'config': config
-#     }
-#
-#     summary_path = os.path.join(results_dir, "training_summary.json")
-#     with open(summary_path, 'w', encoding='utf-8') as f:
-#         json.dump(training_summary, f, indent=2, ensure_ascii=False)
-#
-#     print(f"训练摘要已保存至: {summary_path}")
-#
-#
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--seed', type=int, default=42, help='Random seed')
-#
-#     args = parser.parse_args()
-#
-#     # Set random seed
-#     torch.manual_seed(args.seed)
-#
-#     # 使用Seq2Seq配置
-#     config = SEQ2SEQ_CONFIG
-#
-#     main(config)
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -309,9 +35,8 @@ SEQ2SEQ_CONFIG = {
     'batch_size': 16,
     'learning_rate': 0.001,
     'weight_decay': 0.01,
-    'num_epochs': 10,  # 增加训练轮数
+    'num_epochs': 10, 
 
-    # Data configuration - 使用可靠版本
     'dataset': "reliable",
     'num_samples': 800,
 }
@@ -457,11 +182,9 @@ def main(config):
     print(f"结果将保存至: {results_dir}")
     print(f"数据集: {config.get('dataset', 'reliable')}")
 
-    # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Using device: {device}")
 
-    # Load data
     print(f"Loading {config.get('dataset', 'reliable')} dataset...")
     dataset_loader = get_seq2seq_dataset_loader(config.get('dataset', 'reliable'))
 
@@ -497,7 +220,6 @@ def main(config):
     print(f"Batch size: {config['batch_size']}")
     print(f"Training samples: {config['num_samples']}")
 
-    # Loss and optimizer
     criterion = nn.CrossEntropyLoss(ignore_index=0)
     optimizer = optim.AdamW(
         model.parameters(),
@@ -505,7 +227,6 @@ def main(config):
         weight_decay=config.get('weight_decay', 0.01)
     )
 
-    # Create trainer
     trainer = Seq2SeqTrainer(
         model=model,
         train_loader=train_loader,
@@ -520,7 +241,6 @@ def main(config):
     # 保存实验配置
     trainer.save_experiment_config()
 
-    # Train model
     print("Starting Seq2Seq training...")
     trainer.train(
         num_epochs=config['num_epochs'],
