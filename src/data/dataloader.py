@@ -6,9 +6,6 @@ import random
 
 
 class CharDataset(Dataset):
-    """
-    Character-level dataset for language modeling
-    """
 
     def __init__(self, text, seq_len=128):
         self.seq_len = seq_len
@@ -31,9 +28,6 @@ class CharDataset(Dataset):
 
 
 def load_ag_news_titles(batch_size=32, seq_len=64, split_ratio=0.9):
-    """
-    加载AG News标题数据集 - 优化为快速训练版本
-    """
     print("Loading AG News Titles dataset (optimized for fast training)...")
 
     try:
@@ -43,28 +37,22 @@ def load_ag_news_titles(batch_size=32, seq_len=64, split_ratio=0.9):
         dataset = load_dataset("ag_news")
 
         texts = []
-        # 大幅减少样本数量以加快训练
-        max_samples = 800  # 从5000减少到800，大幅加快训练
+        max_samples = 800
 
         for split in ['train', 'test']:
             for example in dataset[split]:
                 if len(texts) >= max_samples:
                     break
-
-                # 使用'text'字段
                 content = example['text']
 
-                # 选择较短的内容，进一步加快训练
-                if 20 < len(content) < 200:  # 选择中等长度的文本
+                if 20 < len(content) < 200: 
                     texts.append(content + " ")
 
-        # 合并所有文本
         text = "".join(texts)
         print(f"AG News Titles: {len(texts)} samples, {len(text)} characters")
 
     except Exception as e:
         print(f"Error loading AG News: {e}")
-        # 回退文本 - 新闻标题风格（也减少数量）
         text = """
         Stocks rise amid economic recovery signs. 
         Tech companies report strong earnings.
@@ -111,9 +99,6 @@ def load_ag_news_titles(batch_size=32, seq_len=64, split_ratio=0.9):
 
 
 def load_imdb_reviews(batch_size=32, seq_len=64, split_ratio=0.9):
-    """
-    加载IMDB电影评论数据集 - 优化为快速训练版本
-    """
     print("Loading IMDB Reviews dataset (optimized for fast training)...")
 
     try:
@@ -122,14 +107,14 @@ def load_imdb_reviews(batch_size=32, seq_len=64, split_ratio=0.9):
         dataset = load_dataset("imdb")
 
         texts = []
-        max_samples = 600  # 从4000减少到600
+        max_samples = 600  
 
         for split in ['train', 'test']:
             for example in dataset[split]:
                 if len(texts) >= max_samples:
                     break
                 review = example['text']
-                if 30 < len(review) < 150:  # 选择更短的评论
+                if 30 < len(review) < 150
                     texts.append(review + " ")
 
         text = "".join(texts)
@@ -137,7 +122,6 @@ def load_imdb_reviews(batch_size=32, seq_len=64, split_ratio=0.9):
 
     except Exception as e:
         print(f"Error loading IMDB: {e}")
-        # 回退文本 - 电影评论风格（减少数量）
         text = """
         This movie was absolutely fantastic. 
         The plot was engaging and interesting.
@@ -159,7 +143,7 @@ def load_imdb_reviews(batch_size=32, seq_len=64, split_ratio=0.9):
         Horror scenes were scary.
         Documentary provided insights.
         Animation was visually stunning.
-        """ * 8  # 从15减少到8
+        """ * 8  
         print("Using fallback review-style text")
 
     full_dataset = CharDataset(text, seq_len)
@@ -182,9 +166,6 @@ def load_imdb_reviews(batch_size=32, seq_len=64, split_ratio=0.9):
 
 
 def create_causal_mask(seq_len, device):
-    """
-    Create causal mask for autoregressive training
-    """
     mask = torch.tril(torch.ones(seq_len, seq_len, device=device))
     return mask.unsqueeze(0)  # [1, seq_len, seq_len]
 
@@ -197,5 +178,4 @@ DATASET_LOADERS = {
 
 
 def get_dataset_loader(dataset_name):
-    """获取数据集加载函数"""
     return DATASET_LOADERS.get(dataset_name, load_ag_news_titles)
