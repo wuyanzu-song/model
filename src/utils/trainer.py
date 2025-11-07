@@ -12,12 +12,9 @@ from datetime import datetime
 
 
 class Trainer:
-    """
-    Training utility class
-    """
 
     def __init__(self, model, train_loader, val_loader, optimizer, criterion,
-                 device, config, results_dir=None):  # 新增 results_dir 参数
+                 device, config, results_dir=None):
         self.model = model
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -25,17 +22,15 @@ class Trainer:
         self.criterion = criterion
         self.device = device
         self.config = config
-        self.results_dir = results_dir  # 新增：结果目录
+        self.results_dir = results_dir  
 
         self.train_losses = []
         self.val_losses = []
-        self.learning_rates = []  # 新增：记录学习率
+        self.learning_rates = []  
         self.best_val_loss = float('inf')
 
     def train_epoch(self):
-        """
-        Train for one epoch
-        """
+   
         self.model.train()
         total_loss = 0
         progress_bar = tqdm(self.train_loader, desc="Training")
@@ -43,18 +38,15 @@ class Trainer:
         for batch_idx, (data, targets) in enumerate(progress_bar):
             data, targets = data.to(self.device), targets.to(self.device)
 
-            # Create causal mask
             seq_len = data.size(1)
             mask = self._create_causal_mask(seq_len)
 
             self.optimizer.zero_grad()
 
-            # Forward pass
             outputs = self.model(data, mask)
             loss = self.criterion(outputs.view(-1, outputs.size(-1)),
                                   targets.view(-1))
 
-            # Backward pass
             loss.backward()
             torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
             self.optimizer.step()
@@ -65,9 +57,6 @@ class Trainer:
         return total_loss / len(self.train_loader)
 
     def validate(self):
-        """
-        Validate the model
-        """
         self.model.eval()
         total_loss = 0
 
@@ -75,7 +64,6 @@ class Trainer:
             for data, targets in self.val_loader:
                 data, targets = data.to(self.device), targets.to(self.device)
 
-                # Create causal mask
                 seq_len = data.size(1)
                 mask = self._create_causal_mask(seq_len)
 
@@ -87,40 +75,29 @@ class Trainer:
         return total_loss / len(self.val_loader)
 
     def _create_causal_mask(self, seq_len):
-        """
-        Create causal mask for autoregressive generation
-        """
         mask = torch.tril(torch.ones(seq_len, seq_len, device=self.device))
         return mask.unsqueeze(0)  # [1, seq_len, seq_len]
 
     def train(self, num_epochs, save_dir='checkpoints'):
-        """
-        Full training loop
-        """
         os.makedirs(save_dir, exist_ok=True)
 
-        # 学习率调度器
         scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.1)
 
         for epoch in range(num_epochs):
             print(f'Epoch {epoch + 1}/{num_epochs}')
 
-            # Train
             train_loss = self.train_epoch()
             self.train_losses.append(train_loss)
 
-            # Validate
             val_loss = self.validate()
             self.val_losses.append(val_loss)
 
-            # 学习率调度
             scheduler.step()
             current_lr = scheduler.get_last_lr()[0]
             self.learning_rates.append(current_lr)
 
             print(f'Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, LR: {current_lr:.6f}')
 
-            # Save best model
             if val_loss < self.best_val_loss:
                 self.best_val_loss = val_loss
                 torch.save({
@@ -131,7 +108,6 @@ class Trainer:
                     'val_loss': val_loss,
                 }, os.path.join(save_dir, 'best_model.pt'))
 
-            # Save checkpoint every 10 epochs
             if (epoch + 1) % 10 == 0:
                 torch.save({
                     'epoch': epoch,
@@ -142,9 +118,6 @@ class Trainer:
                 }, os.path.join(save_dir, f'checkpoint_epoch_{epoch + 1}.pt'))
 
     def plot_losses(self, save_path=None):
-        """
-        Plot training and validation losses
-        """
         if save_path is None and self.results_dir:
             save_path = os.path.join(self.results_dir, "training_curves.png")
         elif save_path is None:
