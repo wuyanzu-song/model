@@ -6,10 +6,6 @@ from .positional_encoding import PositionalEncoding
 
 
 class DecoderLayer(nn.Module):
-    """
-    Single Transformer Decoder Layer
-    """
-
     def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
         super().__init__()
         self.self_attention = MultiHeadAttention(d_model, num_heads, dropout)
@@ -32,18 +28,14 @@ class DecoderLayer(nn.Module):
             self_mask: Causal mask for decoder self-attention [batch_size, tgt_seq_len, tgt_seq_len]
             cross_mask: Mask for encoder-decoder attention [batch_size, tgt_seq_len, src_seq_len]
         """
-        # Self-attention with causal mask (masked multi-head attention)
         self_attn_output = self.self_attention(x, x, x, self_mask)
         x = x + self.dropout1(self_attn_output)
         x = self.norm1(x)
 
-        # Cross-attention with encoder output
-        # 注意：Q来自decoder，K和V来自encoder
         cross_attn_output = self.cross_attention(x, encoder_output, encoder_output, cross_mask)
         x = x + self.dropout2(cross_attn_output)
         x = self.norm2(x)
 
-        # Feed-forward network
         ff_output = self.feed_forward(x)
         x = x + self.dropout3(ff_output)
         x = self.norm3(x)
@@ -52,32 +44,24 @@ class DecoderLayer(nn.Module):
 
 
 class TransformerDecoder(nn.Module):
-    """
-    Transformer Decoder Stack (支持消融实验)
-    """
-
     def __init__(self, vocab_size, d_model=512, num_heads=8, num_layers=6,
                  d_ff=2048, max_seq_len=512, dropout=0.1, use_pos_encoding=True):
         super().__init__()
         self.d_model = d_model
         self.use_pos_encoding = use_pos_encoding
 
-        # Token embedding
         self.token_embedding = nn.Embedding(vocab_size, d_model)
 
-        # Positional encoding (optional for ablation studies)
         if use_pos_encoding:
             self.pos_encoding = PositionalEncoding(d_model, max_seq_len, dropout)
         else:
             self.pos_encoding = None
 
-        # Decoder layers
         self.decoder_layers = nn.ModuleList([
             DecoderLayer(d_model, num_heads, d_ff, dropout)
             for _ in range(num_layers)
         ])
 
-        # Weight initialization
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
@@ -96,14 +80,11 @@ class TransformerDecoder(nn.Module):
             self_mask: Causal mask for decoder
             cross_mask: Mask for encoder-decoder attention
         """
-        # Token embedding
         x = self.token_embedding(x) * (self.d_model ** 0.5)
 
-        # Positional encoding (if enabled)
         if self.use_pos_encoding and self.pos_encoding is not None:
             x = self.pos_encoding(x)
 
-        # Pass through decoder layers
         for layer in self.decoder_layers:
             x = layer(x, encoder_output, self_mask, cross_mask)
 
