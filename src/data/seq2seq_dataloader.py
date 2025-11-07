@@ -8,9 +8,6 @@ import os
 
 
 class TranslationDataset(Dataset):
-    """
-    机器翻译数据集，用于Encoder-Decoder任务
-    """
     def __init__(self, pairs, src_tokenizer, tgt_tokenizer, max_len=50):
         self.pairs = pairs
         self.src_tokenizer = src_tokenizer
@@ -49,9 +46,6 @@ class TranslationDataset(Dataset):
 
 
 def collate_seq2seq_batch(batch):
-    """
-    处理seq2seq数据的批处理函数
-    """
     src_seqs = [item['src'] for item in batch]
     tgt_input_seqs = [item['tgt_input'] for item in batch]
     tgt_output_seqs = [item['tgt_output'] for item in batch]
@@ -81,9 +75,6 @@ def collate_seq2seq_batch(batch):
 
 
 def _create_padding_mask(seq, pad_token=0):
-    """
-    创建填充掩码
-    """
     # [batch_size, seq_len] -> [batch_size, 1, 1, seq_len]
     mask = (seq != pad_token).unsqueeze(1).unsqueeze(2)
     return mask
@@ -238,7 +229,6 @@ def create_comprehensive_translation_data(batch_size=16, max_len=30):
 
 
 def _create_data_loaders(train_pairs, val_pairs, batch_size, max_len):
-    """创建数据加载器的公共函数"""
     all_src_text = " ".join([pair[0] for pair in train_pairs])
     all_tgt_text = " ".join([pair[1] for pair in train_pairs])
 
@@ -331,7 +321,6 @@ def load_reliable_translation_dataset(batch_size=16, max_len=30, num_samples=800
 
                 # 处理不同的数据格式
                 if 'translation' in example:
-                    # OPUS格式
                     if 'en' in example['translation'] and 'de' in example['translation']:
                         src_text = example['translation']['en'].lower().strip()
                         tgt_text = example['translation']['de'].lower().strip()
@@ -359,7 +348,7 @@ def load_reliable_translation_dataset(batch_size=16, max_len=30, num_samples=800
                         src_text.count(' ') < 20 and tgt_text.count(' ') < 20):
                     train_pairs.append((src_text, tgt_text))
 
-            if len(train_pairs) > 50:  # 降低阈值
+            if len(train_pairs) > 50: 
                 print(f"Successfully loaded {dataset_name}")
                 print(f"Found {len(train_pairs)} training pairs")
 
